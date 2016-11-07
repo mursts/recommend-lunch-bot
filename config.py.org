@@ -1,0 +1,9 @@
+# LINE API
+LINE_CHANNEL_SECRET = ''
+LINE_CHANNEL_ACCESS_TOKEN = ''
+
+# Recruit API
+RECRUIT_API_KEY = ''
+
+# Google Static Map API
+GOOGLE_MAP_API_KEY = ''

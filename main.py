@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import json
 import random
 import urllib
 
-import requests
-from chalice import Chalice
+import webapp2
+from google.appengine.api import urlfetch
+
+import config
+from gae_http_client import RequestsHttpClient
 from linebot import LineBotApi
 from linebot import WebhookHandler
 from linebot.models import CarouselColumn
@@ -15,41 +18,17 @@ from linebot.models import MessageEvent
 from linebot.models import TemplateSendMessage
 from linebot.models import URITemplateAction
 
-
-LINE_CHANNEL_ACCESS_TOKEN = ''
-LINE_CHANNEL_SECRET = ''
-RECRUIT_API_KEY = ''
-GOOGLE_MAP_API_KEY = ''
-
-app = Chalice(app_name='todaylunch')
-app.debug = True
-line_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
-
-@app.route('/')
-def index():
-    return {'hello': 'world'}
-
-
-@app.route('/callback', methods=['POST'])
-def callback():
-    request = app.current_request
-
-    signature = request.headers['X-Line-Signature']
-    body = request.raw_body.decode('utf-8')
-    handler.handle(body, signature)
-
-    return 'HELLO'
-
-
 GOURMET_ENDPOINT = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/'
 
 MAP_URL = 'https://maps.googleapis.com/maps/api/staticmap?center={},{}&zoom=16&size=320x200&key={}&markers={}'
 
 
+line_api = LineBotApi(config.LINE_CHANNEL_ACCESS_TOKEN, http_client=RequestsHttpClient)
+handler = WebhookHandler(config.LINE_CHANNEL_SECRET)
+
+
 def build_static_map_url(lat, lng):
-    return MAP_URL.format(lat, lng, GOOGLE_MAP_API_KEY, urllib.quote(lat + ',' + lng))
+    return MAP_URL.format(lat, lng, config.GOOGLE_MAP_API_KEY, urllib.quote(lat + ',' + lng))
 
 
 @handler.add(MessageEvent, message=LocationMessage)
@@ -57,7 +36,7 @@ def handle_locationmessage(event):
     lat = event.message.latitude
     lng = event.message.longitude
 
-    querystring = {'key': RECRUIT_API_KEY,
+    querystring = {'key': config.RECRUIT_API_KEY,
                    'lat': lat,
                    'lng': lng,
                    'range': 3,
@@ -69,9 +48,9 @@ def handle_locationmessage(event):
     url = '{}?{}'.format(GOURMET_ENDPOINT,
                          urllib.urlencode(querystring))
 
-    r = requests.get(url)
+    r = urlfetch.fetch(url)
 
-    content = r.json()
+    content = json.loads(r.content)
     shops = content['results']['shop']
     random.shuffle(shops)
 
@@ -89,3 +68,21 @@ def handle_locationmessage(event):
                            messages=TemplateSendMessage(alt_text="お店リスト",
                                                         template=CarouselTemplate(columns=columns)))
 
+
+class CallbackHandler(webapp2.RequestHandler):
+    def post(self):
+        request_body = self.request.body.decode('utf-8')
+        signature = self.request.headers.get('X-Line-Signature')
+
+        handler.handle(request_body, signature)
+
+
+class MainHandler(webapp2.RequestHandler):
+    def get(self):
+        self.response.write("I'm Recommend Lunch Bot")
+
+
+app = webapp2.WSGIApplication([
+    ('/', MainHandler),
+    ('/callback', CallbackHandler)
+], debug=True)

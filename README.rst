@@ -9,12 +9,15 @@ Recommend Lunch Bot
 環境
 ==============================
 
-- AWS Lambda
-- API Gateway
-- Chalice
+- Google App Engine
+- Python
 
 使用API
 ==============================
 
 - `ホットペッパーAPI <http://webservice.recruit.co.jp/hotpepper/>`_
 - `Static Maps API <https://developers.google.com/maps/documentation/static-maps/?hl=ja>`_
+
+.. note::
+
+   AWS Lambdaを使用したバージョンが ``aws`` ブランチにあります
