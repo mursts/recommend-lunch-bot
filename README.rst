@@ -11,6 +11,8 @@ Recommend Lunch Bot
 
 - Google App Engine
 - Python
+- LINE Bot SDK
+
 
 使用API
 ==============================
