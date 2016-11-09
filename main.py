@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 import json
+import logging
 import random
 import urllib
 
 import webapp2
+from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 
 import config
@@ -74,6 +76,19 @@ class CallbackHandler(webapp2.RequestHandler):
         request_body = self.request.body.decode('utf-8')
         signature = self.request.headers.get('X-Line-Signature')
 
+        logging.debug(request_body)
+        logging.debug(signature)
+
+        taskqueue.add(url='/task',
+                      params={'request_body': request_body,
+                              'signature': signature})
+
+
+class TaskHandler(webapp2.RequestHandler):
+    def post(self):
+        request_body = self.request.get('request_body')
+        signature = self.request.get('signature')
+
         handler.handle(request_body, signature)
 
 
@@ -84,5 +99,6 @@ class MainHandler(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/callback', CallbackHandler)
+    ('/callback', CallbackHandler),
+    ('/task', TaskHandler)
 ], debug=True)

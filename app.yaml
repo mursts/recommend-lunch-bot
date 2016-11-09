@@ -5,8 +5,14 @@ api_version: 1
 threadsafe: yes
 
 handlers:
+- url: /task
+  script: main.app
+  login: admin
+  secure: always
+
 - url: .*
   script: main.app
+  secure: always
 
 libraries:
 - name: webapp2
